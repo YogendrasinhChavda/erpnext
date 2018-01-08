@@ -163,6 +163,55 @@ frappe.ui.form.on('Item Reorder', {
 	}
 })
 
+
+
+cur_frm.fields_dict['alternative_items'].grid.get_field('uom').get_query = function(doc, cdt, cdn) {
+	 var d = locals[cdt][cdn];
+     return {
+        filters: [
+			['UOM Conversion Detail', 'parent', '=', d.item],
+		]
+    }
+};
+
+frappe.ui.form.on('Item Alternative', {
+	item: function(frm, cdt, cdn){
+		var row = frappe.get_doc(cdt, cdn)
+		frappe.call({
+			method: 'frappe.client.get',
+			args: {
+				doctype: 'Item',
+				name: row.item
+			},
+			callback: function(r){
+				if (r.message) {
+					row.item_name = r.message.item_name
+					frm.refresh()
+				}
+
+			}
+		})
+	},
+	uom: function(frm, cdt, cdn){
+		var row = frappe.get_doc(cdt, cdn)
+		console.log(row)
+		frappe.call({
+			method: 'frappe.client.get',
+			args: {
+				doctype: 'UOM Conversion Detail',
+				name: row.uom
+			},
+			callback: function(r){
+				if (r.message) {
+					row.uom_display = r.message.uom + " ~ " + r.message.conversion_factor
+					frm.refresh()
+				}
+			}
+		})
+	}
+})
+
+
 $.extend(erpnext.item, {
 	setup_queries: function(frm) {
 		frm.fields_dict['expense_account'].get_query = function(doc) {

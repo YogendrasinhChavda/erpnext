@@ -98,6 +98,7 @@ class Item(WebsiteGenerator):
 		self.make_thumbnail()
 		self.validate_fixed_asset()
 		self.validate_retain_sample()
+		self.validate_alternative_items()
 
 		if not self.get("__islocal"):
 			self.old_item_group = frappe.db.get_value(self.doctype, self.name, "item_group")
@@ -111,6 +112,28 @@ class Item(WebsiteGenerator):
 		self.update_variants()
 		self.update_item_price()
 		self.update_template_item()
+
+	def validate_alternative_items(self):
+		# validate duplicate item + uom
+
+		def list_duplicates(seq):
+			"""
+				Check if list of tuple values has duplicates and return them
+			"""
+  			seen = set()
+  			seen_add = seen.add
+  			seen_twice = set( x for x in seq if x in seen or seen_add(x) )
+  			return list(seen_twice)
+
+		duplicates_itemuoms = list_duplicates([(item.item, item.uom)
+												for item
+												in self.alternative_items])
+		if duplicates_itemuoms: # If duplicates throw error
+			for duplicate in duplicates_itemuoms:
+				item = frappe.get_doc('Item', duplicate[0])
+				item_uom = frappe.get_doc('UOM Conversion Detail', duplicate[1])
+				frappe.throw(_("Duplicate Alternative Item, {} with UOM {} / {}".format(item.item_code, item_uom.uom, item_uom.conversion_factor)))
+
 
 	def validate_description(self):
 		'''Clean HTML description if set'''
